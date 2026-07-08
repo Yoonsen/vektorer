@@ -272,7 +272,6 @@ export default function LlmGeneratedComponent({ height = '800px' }: Props) {
     vx /= len;
     vy /= len;
 
-    let maxLoss = 0;
     let minT = Infinity;
     let maxT = -Infinity;
 
@@ -284,11 +283,14 @@ export default function LlmGeneratedComponent({ height = '800px' }: Props) {
       p.xp = meanX + t * vx;
       p.yp = meanY + t * vy;
 
-      maxLoss += Math.pow(p.xp - p.x0, 2) + Math.pow(p.yp - p.y0, 2);
-
       if (t < minT) minT = t;
       if (t > maxT) maxT = t;
     });
+
+    // Calculate Unexplained Variance (Loss) as a true percentage [0, 1]
+    const totalVariance = sXX + sYY;
+    const lossRatio = totalVariance > 0 ? 1 - (lambda1 / totalVariance) : 0;
+    const maxLoss = lossRatio;
 
     minT -= 10;
     maxT += 10;
