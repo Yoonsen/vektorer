@@ -474,34 +474,47 @@ export default function LlmGeneratedComponent({ height = '800px' }: Props) {
           </div>
         )}
         <svg viewBox="0 0 100 100" className="graph-svg" preserveAspectRatio="xMidYMid meet">
-          {/* Grid and Axes */}
-          {[10, 30, 50, 70, 90].map((tick) => {
-            const valX = ((tick - 10) / 80) * globalMaxX;
-            const valY = ((90 - tick) / 80) * globalMaxY;
+          {(() => {
+            const usePctX = globalMaxX >= 1000;
+            const usePctY = globalMaxY >= 1000;
+            const formatX = (val: number) => usePctX ? (val / 10000).toFixed(2) + '%' : val.toFixed(0);
+            const formatY = (val: number) => usePctY ? (val / 10000).toFixed(2) + '%' : val.toFixed(0);
+            const labelX = usePctX ? `% "${wordA}"` : `PPM "${wordA}"`;
+            const labelY = usePctY ? `% "${wordB}"` : `PPM "${wordB}"`;
+
             return (
-              <g key={`grid-${tick}`}>
-                <line x1={tick} y1="0" x2={tick} y2="100" className="grid-line" />
-                <line x1="0" y1={tick} x2="100" y2={tick} className="grid-line" />
+              <>
+                {/* Grid and Axes */}
+                {[10, 30, 50, 70, 90].map((tick) => {
+                  const valX = ((tick - 10) / 80) * globalMaxX;
+                  const valY = ((90 - tick) / 80) * globalMaxY;
+                  return (
+                    <g key={`grid-${tick}`}>
+                      <line x1={tick} y1="0" x2={tick} y2="100" className="grid-line" />
+                      <line x1="0" y1={tick} x2="100" y2={tick} className="grid-line" />
+                      
+                      <text x={tick} y="93" fontSize="2" fill="var(--text-secondary)" textAnchor="middle" fontFamily="sans-serif">
+                        {formatX(valX)}
+                      </text>
+                      <text x="8" y={tick + 0.7} fontSize="2" fill="var(--text-secondary)" textAnchor="end" fontFamily="sans-serif">
+                        {formatY(valY)}
+                      </text>
+                    </g>
+                  );
+                })}
                 
-                <text x={tick} y="93" fontSize="2" fill="var(--text-secondary)" textAnchor="middle" fontFamily="sans-serif">
-                  {valX.toFixed(0)}
+                <line x1="10" y1="90" x2="95" y2="90" className="axis-line" />
+                <line x1="10" y1="90" x2="10" y2="5" className="axis-line" />
+                
+                <text x="50" y="98" textAnchor="middle" className="axis-label">
+                  {labelX} (Max: {formatX(globalMaxX)})
                 </text>
-                <text x="8" y={tick + 0.7} fontSize="2" fill="var(--text-secondary)" textAnchor="end" fontFamily="sans-serif">
-                  {valY.toFixed(0)}
+                <text x="2" y="50" transform="rotate(-90 2 50)" textAnchor="middle" className="axis-label">
+                  {labelY} (Max: {formatY(globalMaxY)})
                 </text>
-              </g>
+              </>
             );
-          })}
-          
-          <line x1="10" y1="90" x2="95" y2="90" className="axis-line" />
-          <line x1="10" y1="90" x2="10" y2="5" className="axis-line" />
-          
-          <text x="50" y="98" textAnchor="middle" className="axis-label">
-            PPM "{wordA}" (Global max: {globalMaxX.toFixed(0)})
-          </text>
-          <text x="2" y="50" transform="rotate(-90 2 50)" textAnchor="middle" className="axis-label">
-            PPM "{wordB}" (Global max: {globalMaxY.toFixed(0)})
-          </text>
+          })()}
 
           {/* Render each visible layer */}
           {displayLayers.map(({ layer, display }) => {
