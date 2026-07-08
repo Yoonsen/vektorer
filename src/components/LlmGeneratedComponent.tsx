@@ -20,6 +20,9 @@ type DataSet = {
   maxX: number; // local max
   maxY: number; // local max
   numDocs: number;
+  meanX: number;
+  meanY: number;
+  correlation: number;
 };
 
 export interface CorpusLayer {
@@ -139,23 +142,41 @@ export default function LlmGeneratedComponent({ height = '800px' }: Props) {
         throw new Error('Fikk ingen frekvensdata.');
       }
 
-      let mX = Math.max(...rawPoints.map(p => p.freqA));
-      let mY = Math.max(...rawPoints.map(p => p.freqB));
+      const points = rawPoints.map(p => ({ id: p.id, x0: p.freqA, y0: p.freqB, xp: 0, yp: 0 }));
+      const mX = Math.max(...points.map(p => p.x0));
+      const mY = Math.max(...points.map(p => p.y0));
+      const numDocs = points.length;
+      const meanX = numDocs > 0 ? points.reduce((sum, p) => sum + p.x0, 0) / numDocs : 0;
+      const meanY = numDocs > 0 ? points.reduce((sum, p) => sum + p.y0, 0) / numDocs : 0;
       
-      const dataset: DataSet = {
-        points: rawPoints.map(p => ({ id: p.id, x0: p.freqA, y0: p.freqB, xp: 0, yp: 0 })),
-        lineStart: { x: 0, y: 0 },
-        lineEnd: { x: 0, y: 0 },
-        maxLoss: 0,
-        maxX: mX,
-        maxY: mY,
-        numDocs: rawPoints.length
-      };
+      let correlation = 0;
+      if (numDocs > 1) {
+        let sXX = 0, sYY = 0, sXY = 0;
+        points.forEach(p => {
+          sXX += Math.pow(p.x0 - meanX, 2);
+          sYY += Math.pow(p.y0 - meanY, 2);
+          sXY += (p.x0 - meanX) * (p.y0 - meanY);
+        });
+        if (sXX > 0 && sYY > 0) {
+          correlation = sXY / Math.sqrt(sXX * sYY);
+        }
+      }
 
       setLayers(prev => prev.map(l => l.id === layerId ? { 
         ...l, 
         isLoading: false, 
-        dataset, 
+        dataset: {
+          points,
+          lineStart: { x: 0, y: 0 },
+          lineEnd: { x: 0, y: 0 },
+          maxLoss: 0,
+          maxX: mX,
+          maxY: mY,
+          numDocs,
+          meanX,
+          meanY,
+          correlation
+        },
         title: generateTitle(l.config),
         isCollapsed: true // auto collapse on success
       } : l));
@@ -365,6 +386,12 @@ export default function LlmGeneratedComponent({ height = '800px' }: Props) {
                 {/* Body (collapsible) */}
                 {!layer.isCollapsed && (
                   <div className="layer-body">
+                    {layer.dataset && (
+                      <div className="layer-stats" style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', padding: '0 0 10px 0' }}>
+                        <div><strong>Korrelasjon (r):</strong> {layer.dataset.correlation.toFixed(2)}</div>
+                        <div><strong>Ratio ({wordA}/{wordB}):</strong> {layer.dataset.meanY !== 0 ? (layer.dataset.meanX / layer.dataset.meanY).toFixed(2) : '∞'}</div>
+                      </div>
+                    )}
                     <div className="corpus-grid">
                       <div className="corpus-field">
                         <label>Fra år</label>
