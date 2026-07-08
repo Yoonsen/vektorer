@@ -78,6 +78,9 @@ export default function LlmGeneratedComponent({ height = '800px' }: Props) {
   const [globalMaxX, setGlobalMaxX] = useState<number>(100);
   const [globalMaxY, setGlobalMaxY] = useState<number>(100);
 
+  // Custom Tooltip State
+  const [tooltip, setTooltip] = useState<{ x: number, y: number, text: React.ReactNode } | null>(null);
+
   // Recalculate scaling and PCA whenever layers or words change
   useEffect(() => {
     let mX = 0;
@@ -477,7 +480,7 @@ export default function LlmGeneratedComponent({ height = '800px' }: Props) {
       </div>
 
       {/* Interactive Graph SVG */}
-      <div className="graph-container">
+      <div className="graph-container" onMouseLeave={() => setTooltip(null)}>
         {isAnyLoading && (
           <div className="global-spinner">
             <div className="spinner"></div>
@@ -554,9 +557,14 @@ export default function LlmGeneratedComponent({ height = '800px' }: Props) {
                         opacity: 0.6,
                         filter: `drop-shadow(0 0 ${compression / 20}px ${display.color})`
                       }}
-                    >
-                      <title>{p.title} ({p.year}) - {p.authors}&#10;X: {formatX(p.rawX!)}, Y: {formatY(p.rawY!)}</title>
-                    </motion.circle>
+                      onMouseEnter={(e) => setTooltip({
+                        x: e.clientX,
+                        y: e.clientY,
+                        text: <>{p.title} ({p.year}) - {p.authors}<br/>X: {formatX(p.rawX!)}, Y: {formatY(p.rawY!)}</>
+                      })}
+                      onMouseMove={(e) => setTooltip(prev => prev ? { ...prev, x: e.clientX, y: e.clientY } : null)}
+                      onMouseLeave={() => setTooltip(null)}
+                    />
                   );
                 })}
 
@@ -571,7 +579,15 @@ export default function LlmGeneratedComponent({ height = '800px' }: Props) {
                   <line x1="0" y1="-2.5" x2="0" y2="2.5" stroke={display.color} strokeWidth="1.2" />
                   {/* Subtle circle */}
                   <circle cx="0" cy="0" r="1.8" fill="none" stroke={display.color} strokeWidth="0.8" />
-                  <title>Tyngdepunkt ({layer.title})&#10;X: {formatX(layer.dataset!.meanX)}, Y: {formatY(layer.dataset!.meanY)}</title>
+                  <circle cx="0" cy="0" r="4" fill="transparent" 
+                    onMouseEnter={(e) => setTooltip({
+                      x: e.clientX,
+                      y: e.clientY,
+                      text: <>Tyngdepunkt ({layer.title})<br/>X: {formatX(layer.dataset!.meanX)}, Y: {formatY(layer.dataset!.meanY)}</>
+                    })}
+                    onMouseMove={(e) => setTooltip(prev => prev ? { ...prev, x: e.clientX, y: e.clientY } : null)}
+                    onMouseLeave={() => setTooltip(null)}
+                  />
                 </g>
               </g>
             );
@@ -597,6 +613,26 @@ export default function LlmGeneratedComponent({ height = '800px' }: Props) {
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {/* Custom Instant Tooltip Overlay */}
+        {tooltip && (
+          <div style={{
+            position: 'fixed',
+            left: tooltip.x + 15,
+            top: tooltip.y + 15,
+            backgroundColor: 'rgba(0,0,0,0.85)',
+            color: '#fff',
+            padding: '6px 10px',
+            borderRadius: '6px',
+            fontSize: '0.8rem',
+            pointerEvents: 'none',
+            zIndex: 9999,
+            boxShadow: '0 4px 6px rgba(0,0,0,0.3)',
+            whiteSpace: 'nowrap'
+          }}>
+            {tooltip.text}
           </div>
         )}
       </div>
