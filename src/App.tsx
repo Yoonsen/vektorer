@@ -1,4 +1,4 @@
-import React from 'react';
+import './App.css'
 import LlmGeneratedComponent from './components/LlmGeneratedComponent';
 
 function App() {

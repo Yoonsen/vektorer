@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { fetchCorpus, fetchFrequencies } from '../services/nbApi';
 import type { CorpusConfig } from '../services/nbApi';
@@ -431,7 +431,7 @@ export default function LlmGeneratedComponent({ height = '800px' }: Props) {
           </text>
 
           {/* Render each visible layer */}
-          {displayLayers.map(({ layer, display }, idx) => {
+          {displayLayers.map(({ layer, display }) => {
             if (!display) return null;
             return (
               <g key={`layer-${layer.id}`}>
