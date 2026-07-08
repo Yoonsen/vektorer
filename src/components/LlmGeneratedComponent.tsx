@@ -551,7 +551,7 @@ export default function LlmGeneratedComponent({ height = '800px' }: Props) {
                       transition={{ type: 'spring', stiffness: 200, damping: 20 }}
                       style={{
                         fill: display.color,
-                        opacity: 0.7,
+                        opacity: 0.6,
                         filter: `drop-shadow(0 0 ${compression / 20}px ${display.color})`
                       }}
                     >
@@ -564,12 +564,13 @@ export default function LlmGeneratedComponent({ height = '800px' }: Props) {
                 <g 
                   className="centroid-marker" 
                   transform={`translate(${display.centroid.x}, ${display.centroid.y})`}
+                  opacity="1"
                 >
                   {/* Plus sign */}
-                  <line x1="-2" y1="0" x2="2" y2="0" stroke={display.color} strokeWidth="0.8" />
-                  <line x1="0" y1="-2" x2="0" y2="2" stroke={display.color} strokeWidth="0.8" />
+                  <line x1="-2.5" y1="0" x2="2.5" y2="0" stroke={display.color} strokeWidth="1.2" />
+                  <line x1="0" y1="-2.5" x2="0" y2="2.5" stroke={display.color} strokeWidth="1.2" />
                   {/* Subtle circle */}
-                  <circle cx="0" cy="0" r="1.5" fill="none" stroke={display.color} strokeWidth="0.3" strokeDasharray="0.5 0.5" />
+                  <circle cx="0" cy="0" r="1.8" fill="none" stroke={display.color} strokeWidth="0.8" />
                   <title>Tyngdepunkt ({layer.title})&#10;X: {formatX(layer.dataset!.meanX)}, Y: {formatY(layer.dataset!.meanY)}</title>
                 </g>
               </g>
