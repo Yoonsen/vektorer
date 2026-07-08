@@ -423,12 +423,23 @@ export default function LlmGeneratedComponent({ height = '800px' }: Props) {
         )}
         <svg viewBox="0 0 100 100" className="graph-svg" preserveAspectRatio="xMidYMid meet">
           {/* Grid and Axes */}
-          {[10, 30, 50, 70, 90].map((tick) => (
-            <g key={`grid-${tick}`}>
-              <line x1={tick} y1="0" x2={tick} y2="100" className="grid-line" />
-              <line x1="0" y1={tick} x2="100" y2={tick} className="grid-line" />
-            </g>
-          ))}
+          {[10, 30, 50, 70, 90].map((tick) => {
+            const valX = ((tick - 10) / 80) * globalMaxX;
+            const valY = ((90 - tick) / 80) * globalMaxY;
+            return (
+              <g key={`grid-${tick}`}>
+                <line x1={tick} y1="0" x2={tick} y2="100" className="grid-line" />
+                <line x1="0" y1={tick} x2="100" y2={tick} className="grid-line" />
+                
+                <text x={tick} y="93" fontSize="2" fill="var(--text-secondary)" textAnchor="middle" fontFamily="sans-serif">
+                  {valX.toFixed(0)}
+                </text>
+                <text x="8" y={tick + 0.7} fontSize="2" fill="var(--text-secondary)" textAnchor="end" fontFamily="sans-serif">
+                  {valY.toFixed(0)}
+                </text>
+              </g>
+            );
+          })}
           
           <line x1="10" y1="90" x2="95" y2="90" className="axis-line" />
           <line x1="10" y1="90" x2="10" y2="5" className="axis-line" />
