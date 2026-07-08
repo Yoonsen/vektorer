@@ -7,7 +7,15 @@ export interface CorpusConfig {
   limit?: number; // Kept for backwards compat, but we'll use explicit parameter
 }
 
-export async function fetchCorpus(config: CorpusConfig, limit: number = 100): Promise<string[]> {
+export interface BookMeta {
+  dhlabid: number;
+  urn: string;
+  title: string;
+  authors: string;
+  year: number;
+}
+
+export async function fetchCorpus(config: CorpusConfig, limit: number = 100): Promise<BookMeta[]> {
   const body: any = {
     limit: limit,
     doctype: 'digibok',
@@ -33,11 +41,18 @@ export async function fetchCorpus(config: CorpusConfig, limit: number = 100): Pr
   
   // Data kommer tilbake i et kolonne-orientert Pandas-format (record)
   // { dhlabid: { "0": 100384761 }, urn: { "0": "URN:NBN:no-nb_digibok_..." } }
-  if (!data || !data.urn) {
+  if (!data || !data.dhlabid) {
     return [];
   }
 
-  return Object.values(data.urn) as string[];
+  const keys = Object.keys(data.dhlabid);
+  return keys.map(k => ({
+    dhlabid: data.dhlabid[k],
+    urn: data.urn[k],
+    title: data.title ? data.title[k] : '',
+    authors: data.authors ? data.authors[k] : '',
+    year: data.year ? data.year[k] : 0
+  }));
 }
 
 export type FrequencyRecord = [number, string, number, number]; 

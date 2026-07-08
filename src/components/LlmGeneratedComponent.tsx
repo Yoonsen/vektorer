@@ -1,11 +1,15 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { fetchCorpus, fetchFrequencies } from '../services/nbApi';
-import type { CorpusConfig } from '../services/nbApi';
+import type { CorpusConfig, BookMeta } from '../services/nbApi';
 import './LlmGeneratedComponent.css';
 
 type Point = {
   id: number;
+  dhlabid: number;
+  title?: string;
+  authors?: string;
+  year?: number;
   x0: number; // original X
   y0: number; // original Y
   xp: number; // projected X
@@ -30,7 +34,7 @@ export interface CorpusLayer {
   config: CorpusConfig;
   color: string;
   dataset: DataSet | null;
-  urns?: string[];
+  books?: BookMeta[];
   visible: boolean;
   isLoading: boolean;
   errorMsg: string;
@@ -112,19 +116,20 @@ export default function LlmGeneratedComponent({ height = '800px' }: Props) {
       const layer = layers.find(l => l.id === layerId);
       if (!layer) return;
 
-      let urns = layer.urns || [];
-      if (forceResample || urns.length === 0) {
-        urns = await fetchCorpus(layer.config, globalLimit);
-        if (urns.length === 0) {
+      let books = layer.books || [];
+      if (forceResample || books.length === 0) {
+        books = await fetchCorpus(layer.config, globalLimit);
+        if (books.length === 0) {
           throw new Error('Fant ingen bøker som matchet.');
         }
-        // Cache URNs so we can reuse them if words change
-        setLayers(prev => prev.map(l => l.id === layerId ? { ...l, urns } : l));
+        // Cache books so we can reuse them if words change
+        setLayers(prev => prev.map(l => l.id === layerId ? { ...l, books } : l));
       }
 
       const wA = wordA.trim().toLowerCase();
       const wB = wordB.trim().toLowerCase();
-      const freqs = await fetchFrequencies(urns, [wA, wB]);
+      
+      const freqs = await fetchFrequencies(books.map(b => b.urn), [wA, wB]);
 
       const docMap = new Map<number, { id: number; freqA: number; freqB: number }>();
       freqs.forEach(([dhlabid, word, freq, total]) => {
@@ -141,8 +146,21 @@ export default function LlmGeneratedComponent({ height = '800px' }: Props) {
       if (rawPoints.length === 0) {
         throw new Error('Fikk ingen frekvensdata.');
       }
-
-      const points = rawPoints.map(p => ({ id: p.id, x0: p.freqA, y0: p.freqB, xp: 0, yp: 0 }));
+      
+      const points = rawPoints.map((p, i) => {
+        const meta = books.find(b => b.dhlabid === p.id);
+        return { 
+          id: i, 
+          dhlabid: p.id,
+          title: meta?.title,
+          authors: meta?.authors,
+          year: meta?.year,
+          x0: p.freqA, 
+          y0: p.freqB, 
+          xp: 0, 
+          yp: 0 
+        };
+      });
       const mX = Math.max(...points.map(p => p.x0));
       const mY = Math.max(...points.map(p => p.y0));
       const numDocs = points.length;
@@ -214,12 +232,12 @@ export default function LlmGeneratedComponent({ height = '800px' }: Props) {
     }
     
     // 1. Map to SVG space [10, 90] using GLOBAL max
-    const svgPoints = layer.dataset.points.map(p => ({
-      id: p.id,
-      x0: 10 + (p.x0 / globalMaxX) * 80,
-      y0: 90 - (p.y0 / globalMaxY) * 80,
-      xp: 0, yp: 0
-    }));
+      const svgPoints = layer.dataset.points.map(p => ({
+        ...p,
+        x0: 10 + (p.x0 / globalMaxX) * 80,
+        y0: 90 - (p.y0 / globalMaxY) * 80,
+        xp: 0, yp: 0
+      }));
 
     // 2. PCA Calculation in SVG Space
     const numPoints = svgPoints.length;
@@ -503,7 +521,7 @@ export default function LlmGeneratedComponent({ height = '800px' }: Props) {
 
                   return (
                     <motion.circle
-                      key={p.id}
+                      key={`pt-${p.id}`}
                       cx={cx}
                       cy={cy}
                       r="1.2"
@@ -513,9 +531,12 @@ export default function LlmGeneratedComponent({ height = '800px' }: Props) {
                       transition={{ type: 'spring', stiffness: 200, damping: 20 }}
                       style={{
                         fill: display.color,
+                        opacity: 0.7,
                         filter: `drop-shadow(0 0 ${compression / 20}px ${display.color})`
                       }}
-                    />
+                    >
+                      <title>{p.title} ({p.year}) - {p.authors}&#10;X: {p.x0.toFixed(0)}, Y: {p.y0.toFixed(0)}</title>
+                    </motion.circle>
                   );
                 })}
               </g>
