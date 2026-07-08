@@ -383,7 +383,11 @@ export default function LlmGeneratedComponent({ height = '800px' }: Props) {
                     <div className="color-dot" style={{ backgroundColor: layer.color }}></div>
                     <strong>{layer.title}</strong>
                     {layer.isLoading && <span className="layer-status">Laster...</span>}
-                    {layer.dataset && <span className="layer-status">({layer.dataset.numDocs} bøker)</span>}
+                    {layer.dataset && (
+                      <span className="layer-status">
+                        ({layer.dataset.numDocs} bøker) | r: {layer.dataset.correlation.toFixed(2)} | X/Y: {layer.dataset.meanY !== 0 ? (layer.dataset.meanX / layer.dataset.meanY).toFixed(2) : '∞'}
+                      </span>
+                    )}
                   </div>
                   <div className="layer-header-right">
                     <input 
@@ -404,12 +408,6 @@ export default function LlmGeneratedComponent({ height = '800px' }: Props) {
                 {/* Body (collapsible) */}
                 {!layer.isCollapsed && (
                   <div className="layer-body">
-                    {layer.dataset && (
-                      <div className="layer-stats" style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', padding: '0 0 10px 0' }}>
-                        <div><strong>Korrelasjon (r):</strong> {layer.dataset.correlation.toFixed(2)}</div>
-                        <div><strong>Ratio ({wordA}/{wordB}):</strong> {layer.dataset.meanY !== 0 ? (layer.dataset.meanX / layer.dataset.meanY).toFixed(2) : '∞'}</div>
-                      </div>
-                    )}
                     <div className="corpus-grid">
                       <div className="corpus-field">
                         <label>Fra år</label>
