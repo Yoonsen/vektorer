@@ -235,6 +235,8 @@ export default function LlmGeneratedComponent({ height = '800px' }: Props) {
     // 1. Map to SVG space [10, 90] using GLOBAL max
       const svgPoints = layer.dataset.points.map(p => ({
         ...p,
+        rawX: p.x0,
+        rawY: p.y0,
         x0: 10 + (p.x0 / globalMaxX) * 80,
         y0: 90 - (p.y0 / globalMaxY) * 80,
         xp: 0, yp: 0
@@ -330,6 +332,13 @@ export default function LlmGeneratedComponent({ height = '800px' }: Props) {
   };
 
   const isAnyLoading = layers.some(l => l.isLoading);
+
+  const usePctX = globalMaxX >= 1000;
+  const usePctY = globalMaxY >= 1000;
+  const formatX = (val: number) => usePctX ? (val / 10000).toFixed(2) + '%' : val.toFixed(0);
+  const formatY = (val: number) => usePctY ? (val / 10000).toFixed(2) + '%' : val.toFixed(0);
+  const labelX = usePctX ? `% "${wordA}"` : `PPM "${wordA}"`;
+  const labelY = usePctY ? `% "${wordB}"` : `PPM "${wordB}"`;
 
   return (
     <div className="visualization-container" style={{ minHeight: height }}>
@@ -475,15 +484,6 @@ export default function LlmGeneratedComponent({ height = '800px' }: Props) {
           </div>
         )}
         <svg viewBox="0 0 100 100" className="graph-svg" preserveAspectRatio="xMidYMid meet">
-          {(() => {
-            const usePctX = globalMaxX >= 1000;
-            const usePctY = globalMaxY >= 1000;
-            const formatX = (val: number) => usePctX ? (val / 10000).toFixed(2) + '%' : val.toFixed(0);
-            const formatY = (val: number) => usePctY ? (val / 10000).toFixed(2) + '%' : val.toFixed(0);
-            const labelX = usePctX ? `% "${wordA}"` : `PPM "${wordA}"`;
-            const labelY = usePctY ? `% "${wordB}"` : `PPM "${wordB}"`;
-
-            return (
               <>
                 {/* Grid and Axes */}
                 {[10, 30, 50, 70, 90].map((tick) => {
@@ -514,8 +514,6 @@ export default function LlmGeneratedComponent({ height = '800px' }: Props) {
                   {labelY} (Max: {formatY(globalMaxY)})
                 </text>
               </>
-            );
-          })()}
 
           {/* Render each visible layer */}
           {displayLayers.map(({ layer, display }) => {
@@ -556,7 +554,7 @@ export default function LlmGeneratedComponent({ height = '800px' }: Props) {
                         filter: `drop-shadow(0 0 ${compression / 20}px ${display.color})`
                       }}
                     >
-                      <title>{p.title} ({p.year}) - {p.authors}&#10;X: {p.x0.toFixed(0)}, Y: {p.y0.toFixed(0)}</title>
+                      <title>{p.title} ({p.year}) - {p.authors}&#10;X: {formatX(p.rawX!)}, Y: {formatY(p.rawY!)}</title>
                     </motion.circle>
                   );
                 })}
