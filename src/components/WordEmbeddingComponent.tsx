@@ -45,7 +45,7 @@ export const WordEmbeddingComponent: React.FC = () => {
       // 3. Select Top 100 context words based on PMI/Radon-Nikodym
       // Score = CollocationFrequency / TotalReferenceFrequency
       const topContextWords = Object.entries(globalWordFreq)
-        .filter(([_, freq]) => freq > 5) // Må opptre minst 5 ganger totalt for å unngå ekstrem støy
+        .filter(([_, freq]) => freq > 20) // Må opptre minst 20 ganger totalt for å unngå ekstrem støy
         .map(([word, freq]) => {
            const referenceFreq = totals[word] || 1;
            const score = freq / referenceFreq; 
