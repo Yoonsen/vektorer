@@ -650,7 +650,7 @@ export default function LlmGeneratedComponent({ height = '800px' }: Props) {
                 <div key={layer.id} className="loss-row">
                   <div className="color-dot small" style={{ backgroundColor: display.color }}></div>
                   <span className="loss-value-small">
-                    {currentLoss.toFixed(1)} 
+                    {(currentLoss * 100).toFixed(1)}%
                     <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginLeft: '8px' }}>
                       (r={display.correlation.toFixed(2)})
                     </span>
