@@ -27,6 +27,7 @@ export interface CorpusLayer {
   config: CorpusConfig;
   color: string;
   dataset: DataSet | null;
+  urns?: string[];
   visible: boolean;
   isLoading: boolean;
   errorMsg: string;
@@ -49,6 +50,7 @@ interface Props {
 export default function LlmGeneratedComponent({ height = '800px' }: Props) {
   const [wordA, setWordA] = useState<string>('han');
   const [wordB, setWordB] = useState<string>('ham');
+  const [globalLimit, setGlobalLimit] = useState<number>(100);
   const [compression, setCompression] = useState<number>(0);
   
   const [layers, setLayers] = useState<CorpusLayer[]>([
@@ -98,7 +100,7 @@ export default function LlmGeneratedComponent({ height = '800px' }: Props) {
     return parts.length > 0 ? parts.join(', ') : 'Standard Korpus';
   };
 
-  const fetchLayerData = async (layerId: string) => {
+  const fetchLayerData = async (layerId: string, forceResample: boolean = false) => {
     if (!wordA.trim() || !wordB.trim()) return;
 
     setLayers(prev => prev.map(l => l.id === layerId ? { ...l, isLoading: true, errorMsg: '', dataset: null } : l));
@@ -107,9 +109,14 @@ export default function LlmGeneratedComponent({ height = '800px' }: Props) {
       const layer = layers.find(l => l.id === layerId);
       if (!layer) return;
 
-      const urns = await fetchCorpus(layer.config);
-      if (urns.length === 0) {
-        throw new Error('Fant ingen bøker som matchet.');
+      let urns = layer.urns || [];
+      if (forceResample || urns.length === 0) {
+        urns = await fetchCorpus(layer.config, globalLimit);
+        if (urns.length === 0) {
+          throw new Error('Fant ingen bøker som matchet.');
+        }
+        // Cache URNs so we can reuse them if words change
+        setLayers(prev => prev.map(l => l.id === layerId ? { ...l, urns } : l));
       }
 
       const wA = wordA.trim().toLowerCase();
@@ -159,7 +166,7 @@ export default function LlmGeneratedComponent({ height = '800px' }: Props) {
   };
 
   const handleFetchAll = () => {
-    layers.forEach(layer => fetchLayerData(layer.id));
+    layers.forEach(layer => fetchLayerData(layer.id, false));
   };
 
   const processLayerDisplay = (layer: CorpusLayer) => {
@@ -290,9 +297,15 @@ export default function LlmGeneratedComponent({ height = '800px' }: Props) {
       {/* Global Config Panel */}
       <div className="config-panel">
         <div className="words-section">
-          <h3>Globalt Ordvalg</h3>
-          <p className="help-text">Dette ordparet vil tegnes for alle aktive korpus.</p>
+          <h3>Global Config</h3>
+          <p className="help-text">Dette utvalget gjelder for alle aktive korpus.</p>
           <div className="input-row">
+            <select className="text-input small" value={globalLimit} onChange={e => setGlobalLimit(parseInt(e.target.value))}>
+              <option value="50">50 bøker</option>
+              <option value="100">100 bøker</option>
+              <option value="500">500 bøker</option>
+              <option value="2000">2000 bøker</option>
+            </select>
             <input 
               type="text" 
               className="text-input" 
@@ -340,7 +353,7 @@ export default function LlmGeneratedComponent({ height = '800px' }: Props) {
                       onChange={() => toggleLayerVisibility(layer.id)}
                       title="Vis/skjul i graf"
                     />
-                    <button className="icon-button" onClick={() => fetchLayerData(layer.id)} title="Resample (Hent 100 nye bøker)">
+                    <button className="icon-button" onClick={() => fetchLayerData(layer.id, true)} title="Resample (Hent nye bøker)">
                       ↻
                     </button>
                     <button className="icon-button delete" onClick={() => deleteLayer(layer.id)} title="Slett lag">
@@ -372,15 +385,6 @@ export default function LlmGeneratedComponent({ height = '800px' }: Props) {
                       <div className="corpus-field">
                         <label>Dewey (DDK)</label>
                         <input type="text" className="text-input small" placeholder="f.eks. 839" value={layer.config.ddk || ''} onChange={e => updateLayerConfig(layer.id, { ddk: e.target.value })}/>
-                      </div>
-                      <div className="corpus-field">
-                        <label>Bøker (Limit)</label>
-                        <select className="text-input small" value={layer.config.limit || 100} onChange={e => updateLayerConfig(layer.id, { limit: parseInt(e.target.value) })}>
-                          <option value="50">50</option>
-                          <option value="100">100</option>
-                          <option value="500">500</option>
-                          <option value="2000">2000</option>
-                        </select>
                       </div>
                     </div>
                     {layer.errorMsg && <div className="error-message">{layer.errorMsg}</div>}

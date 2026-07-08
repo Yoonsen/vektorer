@@ -4,12 +4,12 @@ export interface CorpusConfig {
   author?: string;
   subject?: string;
   ddk?: string;
-  limit?: number;
+  limit?: number; // Kept for backwards compat, but we'll use explicit parameter
 }
 
-export async function fetchCorpus(config: CorpusConfig): Promise<string[]> {
+export async function fetchCorpus(config: CorpusConfig, limit: number = 100): Promise<string[]> {
   const body: any = {
-    limit: config.limit || 100, // Bruk limit fra config, eller default 100
+    limit: limit,
     doctype: 'digibok',
   };
 
