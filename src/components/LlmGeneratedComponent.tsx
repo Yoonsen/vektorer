@@ -81,6 +81,9 @@ export default function LlmGeneratedComponent({ height = '800px' }: Props) {
   // Custom Tooltip State
   const [tooltip, setTooltip] = useState<{ x: number, y: number, text: React.ReactNode } | null>(null);
 
+  // Global highlight state
+  const [highlightLines, setHighlightLines] = useState<boolean>(false);
+
   // Recalculate scaling and PCA whenever layers or words change
   useEffect(() => {
     let mX = 0;
@@ -524,17 +527,32 @@ export default function LlmGeneratedComponent({ height = '800px' }: Props) {
             if (!display) return null;
             return (
               <g key={`layer-${layer.id}`}>
-                {/* PCA / Target Line */}
-                <line 
-                  x1={display.lineStart.x} y1={display.lineStart.y} 
-                  x2={display.lineEnd.x} y2={display.lineEnd.y} 
-                  className={`pca-line ${compression > 50 ? 'active' : ''}`}
-                  strokeDasharray={compression > 50 ? 'none' : '2 2'}
-                  style={{ 
-                    stroke: display.color,
-                    opacity: 0.8 
-                  }}
-                />
+                {/* PCA / Target Line Group */}
+                <g 
+                  onMouseEnter={() => setHighlightLines(true)}
+                  onMouseLeave={() => setHighlightLines(false)}
+                >
+                  {/* Invisible wide line for easier hovering */}
+                  <line 
+                    x1={display.lineStart.x} y1={display.lineStart.y} 
+                    x2={display.lineEnd.x} y2={display.lineEnd.y} 
+                    stroke="transparent"
+                    strokeWidth="4"
+                    style={{ cursor: 'pointer' }}
+                  />
+                  {/* Actual visible line */}
+                  <line 
+                    x1={display.lineStart.x} y1={display.lineStart.y} 
+                    x2={display.lineEnd.x} y2={display.lineEnd.y} 
+                    className={`pca-line ${compression > 50 ? 'active' : ''}`}
+                    strokeDasharray={compression > 50 ? 'none' : '2 2'}
+                    style={{ 
+                      stroke: display.color,
+                      opacity: highlightLines ? 1 : 0.8,
+                      strokeWidth: highlightLines ? 1.5 : 1
+                    }}
+                  />
+                </g>
 
                 {/* Data Points */}
                 {display.points.map((p) => {
@@ -554,8 +572,9 @@ export default function LlmGeneratedComponent({ height = '800px' }: Props) {
                       transition={{ type: 'spring', stiffness: 200, damping: 20 }}
                       style={{
                         fill: display.color,
-                        opacity: 0.6,
-                        filter: `drop-shadow(0 0 ${compression / 20}px ${display.color})`
+                        opacity: highlightLines ? 0.1 : 0.6,
+                        filter: `drop-shadow(0 0 ${compression / 20}px ${display.color})`,
+                        transition: 'opacity 0.2s ease'
                       }}
                       onMouseEnter={(e) => setTooltip({
                         x: e.clientX,
@@ -573,6 +592,9 @@ export default function LlmGeneratedComponent({ height = '800px' }: Props) {
                   className="centroid-marker" 
                   transform={`translate(${display.centroid.x}, ${display.centroid.y})`}
                   opacity="1"
+                  onMouseEnter={() => setHighlightLines(true)}
+                  onMouseLeave={() => setHighlightLines(false)}
+                  style={{ cursor: 'pointer' }}
                 >
                   {/* Plus sign */}
                   <line x1="-2.5" y1="0" x2="2.5" y2="0" stroke={display.color} strokeWidth="1.2" />
