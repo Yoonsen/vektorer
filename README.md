@@ -1,32 +1,28 @@
-# React + TypeScript + Vite
+# Vektorer - Pedagogisk Introduksjon til Dimensjonsreduksjon og Statistikk
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Dette er en React/Vite-applikasjon designet for å lære bort grunnleggende konsepter i lineær algebra (vektorer, PCA, projeksjoner, loss) og statistikk (varians, korrelasjon, the Law of Large Numbers) ved hjelp av ekte data fra Nasjonalbiblioteket (DH-lab).
 
-Currently, two official plugins are available:
+## 🤖 AI Co-development & Architecture
+Dette prosjektet er utviklet gjennom "Pair Programming" mellom en menneskelig humanist/forsker og en AI-agent (**Google Antigravity**). 
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+For fremtidige AI-agenter som skal klone, lese eller bygge videre på denne applikasjonen, vennligst les [architecture.md](./architecture.md) som ligger i roten av repositoriet. Dette dokumentet inneholder all nødvendig informasjon for å forstå konseptet, dataflyten og de matematiske beregningene som gjøres på klientsiden.
 
-## React Compiler
+## Kom i gang (Kjøring lokalt)
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+For å kjøre appen lokalt trenger du Node.js.
 
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+1. Installer avhengigheter:
+```bash
+npm install
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+2. Start dev-serveren:
+```bash
+npm run dev
+```
+
+Applikasjonen gjør live API-kall mot Nasjonalbibliotekets DH-lab (api.nb.no) og bygger opp korpus interaktivt.
+
+## Kreditter / Collaborators
+- **Lars G. Johnsen** (Ide, konsept, faglig og teoretisk fundament)
+- **Google Antigravity** (AI Agent / Utvikler: kode-implementasjon, SVG-matematikk og UI-design)
