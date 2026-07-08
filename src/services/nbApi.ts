@@ -4,6 +4,7 @@ export interface CorpusConfig {
   author?: string;
   subject?: string;
   ddk?: string;
+  lang?: string;
   limit?: number; // Kept for backwards compat, but we'll use explicit parameter
 }
 
@@ -26,6 +27,7 @@ export async function fetchCorpus(config: CorpusConfig, limit: number = 100): Pr
   if (config.author) body.author = config.author;
   if (config.subject) body.subject = config.subject;
   if (config.ddk) body.ddk = config.ddk + '*'; // Match alle underkategorier (FTS5)
+  body.lang = config.lang || 'nob';
 
   const response = await fetch('https://api.nb.no/dhlab/build_corpus', {
     method: 'POST',

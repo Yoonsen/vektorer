@@ -424,6 +424,15 @@ export default function LlmGeneratedComponent({ height = '800px' }: Props) {
                         <input type="text" className="text-input small" placeholder="f.eks. Ibsen" value={layer.config.author || ''} onChange={e => updateLayerConfig(layer.id, { author: e.target.value })}/>
                       </div>
                       <div className="corpus-field">
+                        <label>Språk</label>
+                        <select className="text-input small" value={layer.config.lang || 'nob'} onChange={e => updateLayerConfig(layer.id, { lang: e.target.value })}>
+                          <option value="nob">Bokmål</option>
+                          <option value="nno">Nynorsk</option>
+                          <option value="eng">Engelsk</option>
+                          <option value="">Alle språk</option>
+                        </select>
+                      </div>
+                      <div className="corpus-field">
                         <label>Emne (Subject)</label>
                         <input type="text" className="text-input small" value={layer.config.subject || ''} onChange={e => updateLayerConfig(layer.id, { subject: e.target.value })}/>
                       </div>
