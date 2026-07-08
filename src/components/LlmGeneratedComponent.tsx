@@ -483,7 +483,11 @@ export default function LlmGeneratedComponent({ height = '800px' }: Props) {
       </div>
 
       {/* Interactive Graph SVG */}
-      <div className="graph-container" onMouseLeave={() => setTooltip(null)}>
+      <div 
+        className="graph-container" 
+        onMouseLeave={() => setTooltip(null)}
+        onClick={() => { setTooltip(null); setHighlightLines(false); }}
+      >
         {isAnyLoading && (
           <div className="global-spinner">
             <div className="spinner"></div>
@@ -531,6 +535,7 @@ export default function LlmGeneratedComponent({ height = '800px' }: Props) {
                 <g 
                   onMouseEnter={() => setHighlightLines(true)}
                   onMouseLeave={() => setHighlightLines(false)}
+                  onClick={(e) => { e.stopPropagation(); setHighlightLines(true); }}
                 >
                   {/* Invisible wide line for easier hovering */}
                   <line 
@@ -579,6 +584,14 @@ export default function LlmGeneratedComponent({ height = '800px' }: Props) {
                         y: e.clientY,
                         text: <>{p.title} ({p.year}) - {p.authors}<br/>X: {formatX(p.rawX!)}, Y: {formatY(p.rawY!)}</>
                       })}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setTooltip({
+                          x: e.clientX,
+                          y: e.clientY,
+                          text: <>{p.title} ({p.year}) - {p.authors}<br/>X: {formatX(p.rawX!)}, Y: {formatY(p.rawY!)}</>
+                        });
+                      }}
                       onMouseMove={(e) => setTooltip(prev => prev ? { ...prev, x: e.clientX, y: e.clientY } : null)}
                       onMouseLeave={() => setTooltip(null)}
                     />
@@ -592,6 +605,7 @@ export default function LlmGeneratedComponent({ height = '800px' }: Props) {
                   opacity="1"
                   onMouseEnter={() => setHighlightLines(true)}
                   onMouseLeave={() => setHighlightLines(false)}
+                  onClick={(e) => { e.stopPropagation(); setHighlightLines(true); }}
                   style={{ cursor: 'pointer' }}
                 >
                   {/* Plus sign */}
@@ -605,6 +619,15 @@ export default function LlmGeneratedComponent({ height = '800px' }: Props) {
                       y: e.clientY,
                       text: <>Tyngdepunkt ({layer.title})<br/>X: {formatX(layer.dataset!.meanX)}, Y: {formatY(layer.dataset!.meanY)}</>
                     })}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setTooltip({
+                        x: e.clientX,
+                        y: e.clientY,
+                        text: <>Tyngdepunkt ({layer.title})<br/>X: {formatX(layer.dataset!.meanX)}, Y: {formatY(layer.dataset!.meanY)}</>
+                      });
+                      setHighlightLines(true);
+                    }}
                     onMouseMove={(e) => setTooltip(prev => prev ? { ...prev, x: e.clientX, y: e.clientY } : null)}
                     onMouseLeave={() => setTooltip(null)}
                   />
