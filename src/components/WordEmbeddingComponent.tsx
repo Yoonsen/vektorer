@@ -5,7 +5,6 @@ import { fetchCorpus, fetchCollocations } from '../services/nbApi';
 
 export const WordEmbeddingComponent: React.FC = () => {
   const [focusWords, setFocusWords] = useState<string>('hund, katt, ulv, bil, tog, fly, glad, trist, sint');
-  const [anchorWords, setAnchorWords] = useState<string>('mann, kvinne, natur, maskin, følelse, hastighet, farge, mat, søvn, by');
   
   const [plotData, setPlotData] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -16,32 +15,46 @@ export const WordEmbeddingComponent: React.FC = () => {
     setLoadingStatus('Henter et tilfeldig korpus...');
     try {
       const foci = focusWords.split(',').map(w => w.trim().toLowerCase()).filter(w => w);
-      const anchors = anchorWords.split(',').map(w => w.trim().toLowerCase()).filter(w => w);
 
-      // 1. Fetch a base corpus (e.g. 500 books from last 20 years to get modern semantics)
+      // 1. Fetch a base corpus
       const corpus = await fetchCorpus({ limit: 500, from_year: 2000, to_year: 2020 });
       const urns = corpus.map(b => b.urn);
 
-      // 2. Build the Matrix
-      const matrix: number[][] = [];
-      
+      // 2. Fetch all collocations and aggregate
+      const allCounts: Record<string, Record<string, number>> = {};
+      const globalWordFreq: Record<string, number> = {};
+
       for (let i = 0; i < foci.length; i++) {
         setLoadingStatus(`Henter kollokasjoner for: "${foci[i]}" (${i+1}/${foci.length})...`);
         const counts = await fetchCollocations(urns, foci[i]);
+        allCounts[foci[i]] = counts;
         
-        // For this focus word, extract the count for each anchor word
-        const row = anchors.map(anchor => {
-          return counts[anchor] || 0; // 0 if they never co-occurred
+        // Aggregate to find the most prominent context words globally
+        for (const [word, count] of Object.entries(counts)) {
+          // Veldig enkel stoppord-filtrering for å unngå at '.' og ',' dominerer 100%
+          if (word.length < 2 || ['og', 'i', 'det', 'på', 'som', 'er', 'en', 'til', 'å', 'av', 'for', 'at', 'med', 'de', 'den'].includes(word)) continue;
+          globalWordFreq[word] = (globalWordFreq[word] || 0) + count;
+        }
+      }
+
+      // 3. Select Top 100 context words (Dimensions)
+      const topContextWords = Object.entries(globalWordFreq)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 100)
+        .map(entry => entry[0]);
+
+      // 4. Build the Matrix (Foci x Top100)
+      const matrix: number[][] = [];
+      for (const focus of foci) {
+        const row = topContextWords.map(ctxWord => {
+           // We could use PMI here if we had total corpus frequency, 
+           // but raw collocated count (TF) centered by PCA is a good proxy for LSA.
+           return allCounts[focus][ctxWord] || 0;
         });
-        
         matrix.push(row);
       }
 
-      setLoadingStatus('Beregner PCA (10D -> 3D)...');
-      
-      // We need to standardise/normalize the matrix before PCA, 
-      // but ml-pca handles centering by default. 
-      // Since raw counts vary wildly, we could log-transform them, but let's try raw first.
+      setLoadingStatus('Beregner PCA (100D -> 3D)...');
 
       // Run PCA
       const pca = new PCA(matrix);
@@ -70,21 +83,14 @@ export const WordEmbeddingComponent: React.FC = () => {
       
       <div style={{ display: 'flex', gap: '20px', marginBottom: '20px' }}>
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          <label style={{ color: 'var(--text-secondary)' }}>Fokus-ord (Punktene i rommet)</label>
+          <label style={{ color: 'var(--text-secondary)' }}>
+            Fokus-ord (Ordene du vil plotte i 3D). Modellen vil automatisk finne de 100 mest relevante assosiasjonene og bruke disse som skjulte dimensjoner!
+          </label>
           <textarea 
             className="text-input" 
             style={{ height: '80px', resize: 'vertical' }}
             value={focusWords}
             onChange={e => setFocusWords(e.target.value)}
-          />
-        </div>
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          <label style={{ color: 'var(--text-secondary)' }}>Anker-ord (Kontekst-dimensjonene)</label>
-          <textarea 
-            className="text-input" 
-            style={{ height: '80px', resize: 'vertical' }}
-            value={anchorWords}
-            onChange={e => setAnchorWords(e.target.value)}
           />
         </div>
       </div>
