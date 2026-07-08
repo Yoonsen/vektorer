@@ -567,14 +567,12 @@ export default function LlmGeneratedComponent({ height = '800px' }: Props) {
                       cy={cy}
                       r="1.2"
                       className="data-point"
-                      initial={{ cx: p.x0, cy: p.y0 }}
-                      animate={{ cx, cy }}
+                      initial={{ cx: p.x0, cy: p.y0, opacity: 0.6 }}
+                      animate={{ cx, cy, opacity: highlightLines ? 0.1 : 0.6 }}
                       transition={{ type: 'spring', stiffness: 200, damping: 20 }}
                       style={{
                         fill: display.color,
-                        opacity: highlightLines ? 0.1 : 0.6,
-                        filter: `drop-shadow(0 0 ${compression / 20}px ${display.color})`,
-                        transition: 'opacity 0.2s ease'
+                        filter: `drop-shadow(0 0 ${compression / 20}px ${display.color})`
                       }}
                       onMouseEnter={(e) => setTooltip({
                         x: e.clientX,
