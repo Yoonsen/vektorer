@@ -129,7 +129,7 @@ export default function LlmGeneratedComponent({ height = '800px' }: Props) {
           docMap.set(dhlabid, { id: dhlabid, freqA: 0, freqB: 0 });
         }
         const doc = docMap.get(dhlabid)!;
-        const relFreq = (freq / total) * 100000;
+        const relFreq = (freq / total) * 1000000; // PPM (Parts Per Million)
         if (word === wA) doc.freqA = relFreq;
         if (word === wB) doc.freqB = relFreq;
       });
@@ -445,10 +445,10 @@ export default function LlmGeneratedComponent({ height = '800px' }: Props) {
           <line x1="10" y1="90" x2="10" y2="5" className="axis-line" />
           
           <text x="50" y="98" textAnchor="middle" className="axis-label">
-            Relativ frekvens per 100k ord "{wordA}" (Global max: {globalMaxX.toFixed(0)})
+            PPM "{wordA}" (Global max: {globalMaxX.toFixed(0)})
           </text>
           <text x="2" y="50" transform="rotate(-90 2 50)" textAnchor="middle" className="axis-label">
-            Relativ frekvens per 100k ord "{wordB}" (Global max: {globalMaxY.toFixed(0)})
+            PPM "{wordB}" (Global max: {globalMaxY.toFixed(0)})
           </text>
 
           {/* Render each visible layer */}
