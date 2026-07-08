@@ -80,3 +80,36 @@ export async function fetchFrequencies(urns: string[], words: string[]): Promise
   const data = await response.json();
   return data as FrequencyRecord[];
 }
+
+export async function fetchCollocations(urns: string[], word: string): Promise<Record<string, number>> {
+  if (urns.length === 0) return {};
+
+  const response = await fetch('https://api.nb.no/dhlab/urncolldist_urn', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      urn: urns,
+      word: word,
+      before: 10,
+      after: 10,
+      samplesize: 500000
+    })
+  });
+
+  if (!response.ok) {
+    throw new Error(`Klarte ikke hente kollokasjoner for ${word}. Status: ${response.status}`);
+  }
+
+  const text = await response.text();
+  try {
+    // API returns a JSON string containing another JSON string representing the Pandas DataFrame
+    const parsed1 = JSON.parse(text);
+    const parsed2 = typeof parsed1 === 'string' ? JSON.parse(parsed1) : parsed1;
+    
+    // We want the 'counts' column which maps words to their collocation frequency
+    return parsed2.counts || {};
+  } catch (e) {
+    console.error(`Feil ved parsing av kollokasjonsdata for ${word}`, e);
+    return {};
+  }
+}

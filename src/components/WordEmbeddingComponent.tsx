@@ -1,28 +1,47 @@
 import React, { useState } from 'react';
 import Plot from 'react-plotly.js';
 import { PCA } from 'ml-pca';
+import { fetchCorpus, fetchCollocations } from '../services/nbApi';
 
 export const WordEmbeddingComponent: React.FC = () => {
-  const [focusWords, setFocusWords] = useState<string>('hund, katt, bil, tog, eple, pære, kjærlighet, hat, glad, trist');
-  const [anchorWords, setAnchorWords] = useState<string>('mann, kvinne, barn, konge, dronning, rød, blå, grønn, rask, sakte, stor, liten');
+  const [focusWords, setFocusWords] = useState<string>('hund, katt, ulv, bil, tog, fly, glad, trist, sint');
+  const [anchorWords, setAnchorWords] = useState<string>('mann, kvinne, natur, maskin, følelse, hastighet, farge, mat, søvn, by');
   
   const [plotData, setPlotData] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [loadingStatus, setLoadingStatus] = useState<string>('');
 
   const handleBuildEmbeddings = async () => {
     setIsLoading(true);
+    setLoadingStatus('Henter et tilfeldig korpus...');
     try {
-      const foci = focusWords.split(',').map(w => w.trim()).filter(w => w);
-      const anchors = anchorWords.split(',').map(w => w.trim()).filter(w => w);
+      const foci = focusWords.split(',').map(w => w.trim().toLowerCase()).filter(w => w);
+      const anchors = anchorWords.split(',').map(w => w.trim().toLowerCase()).filter(w => w);
 
-      // MOCK DATA GENERATION: To be replaced with actual collocation code
-      // Matrix: Rows = Focus Words, Cols = Anchor Words (Dimensions)
-      const matrix = foci.map((_, i) => 
-        anchors.map((_, j) => {
-          // Fake some semantic similarity by using index math
-          return Math.random() * 10 + (Math.sin(i * 1.5 + j) * 5) + (i % 2 === j % 2 ? 10 : 0);
-        })
-      );
+      // 1. Fetch a base corpus (e.g. 500 books from last 20 years to get modern semantics)
+      const corpus = await fetchCorpus({ limit: 500, from_year: 2000, to_year: 2020 });
+      const urns = corpus.map(b => b.urn);
+
+      // 2. Build the Matrix
+      const matrix: number[][] = [];
+      
+      for (let i = 0; i < foci.length; i++) {
+        setLoadingStatus(`Henter kollokasjoner for: "${foci[i]}" (${i+1}/${foci.length})...`);
+        const counts = await fetchCollocations(urns, foci[i]);
+        
+        // For this focus word, extract the count for each anchor word
+        const row = anchors.map(anchor => {
+          return counts[anchor] || 0; // 0 if they never co-occurred
+        });
+        
+        matrix.push(row);
+      }
+
+      setLoadingStatus('Beregner PCA (10D -> 3D)...');
+      
+      // We need to standardise/normalize the matrix before PCA, 
+      // but ml-pca handles centering by default. 
+      // Since raw counts vary wildly, we could log-transform them, but let's try raw first.
 
       // Run PCA
       const pca = new PCA(matrix);
@@ -36,9 +55,11 @@ export const WordEmbeddingComponent: React.FC = () => {
         z: reduced[i][2],
       })));
 
+      setLoadingStatus('');
     } catch (e) {
       console.error(e);
       alert('Feil under bygning av vektorer');
+      setLoadingStatus('');
     }
     setIsLoading(false);
   };
@@ -69,8 +90,14 @@ export const WordEmbeddingComponent: React.FC = () => {
       </div>
 
       <button className="primary-btn" onClick={handleBuildEmbeddings} disabled={isLoading}>
-        {isLoading ? 'Regner ut PCA...' : 'Bygg 3D Ordvektorer (Mock Data)'}
+        {isLoading ? 'Bygger vektorer...' : 'Bygg 3D Ordvektorer'}
       </button>
+
+      {isLoading && (
+        <div style={{ marginTop: '10px', color: 'var(--text-secondary)', fontStyle: 'italic' }}>
+          {loadingStatus}
+        </div>
+      )}
 
       {plotData.length > 0 && (
         <div style={{ marginTop: '40px', background: 'var(--bg-secondary)', borderRadius: '12px', padding: '10px' }}>
