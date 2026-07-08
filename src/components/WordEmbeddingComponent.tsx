@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import Plot from 'react-plotly.js';
 import { PCA } from 'ml-pca';
-import { fetchCorpus, fetchCollocations } from '../services/nbApi';
+import { fetchCorpus, fetchCollocations, fetchTotals } from '../services/nbApi';
 
 export const WordEmbeddingComponent: React.FC = () => {
   const [focusWords, setFocusWords] = useState<string>('hund, katt, ulv, bil, tog, fly, glad, trist, sint');
@@ -16,9 +16,12 @@ export const WordEmbeddingComponent: React.FC = () => {
     try {
       const foci = focusWords.split(',').map(w => w.trim().toLowerCase()).filter(w => w);
 
-      // 1. Fetch a base corpus
+      // 1. Fetch a base corpus and Reference Totals
       const corpus = await fetchCorpus({ limit: 5000, from_year: 2000, to_year: 2020, lang: 'nob' });
       const urns = corpus.map(b => b.urn);
+      
+      setLoadingStatus('Henter referansefrekvenser (Totals)...');
+      const totals = await fetchTotals(100000); // Top 100k words
 
       // 2. Fetch all collocations and aggregate
       const allCounts: Record<string, Record<string, number>> = {};
@@ -31,25 +34,37 @@ export const WordEmbeddingComponent: React.FC = () => {
         
         // Aggregate to find the most prominent context words globally
         for (const [word, count] of Object.entries(counts)) {
-          // Veldig enkel stoppord-filtrering for å unngå at '.' og ',' dominerer 100%
-          if (word.length < 2 || ['og', 'i', 'det', 'på', 'som', 'er', 'en', 'til', 'å', 'av', 'for', 'at', 'med', 'de', 'den'].includes(word)) continue;
+          // Filtrer bort veldig korte ord, og tall
+          if (word.length < 2 || !totals[word] || !isNaN(Number(word))) continue;
           globalWordFreq[word] = (globalWordFreq[word] || 0) + count;
         }
       }
 
-      // 3. Select Top 100 context words (Dimensions)
+      setLoadingStatus('Beregner Radon-Nikodym / PMI for dimensjoner...');
+      
+      // 3. Select Top 100 context words based on PMI/Radon-Nikodym
+      // Score = CollocationFrequency / TotalReferenceFrequency
       const topContextWords = Object.entries(globalWordFreq)
-        .sort((a, b) => b[1] - a[1])
+        .filter(([_, freq]) => freq > 5) // Må opptre minst 5 ganger totalt for å unngå ekstrem støy
+        .map(([word, freq]) => {
+           const referenceFreq = totals[word] || 1;
+           const score = freq / referenceFreq; 
+           return { word, score };
+        })
+        .sort((a, b) => b.score - a.score)
         .slice(0, 100)
-        .map(entry => entry[0]);
+        .map(entry => entry.word);
 
-      // 4. Build the Matrix (Foci x Top100)
+      // 4. Build the Matrix (Foci x Top100) using PMI values
       const matrix: number[][] = [];
       for (const focus of foci) {
         const row = topContextWords.map(ctxWord => {
-           // We could use PMI here if we had total corpus frequency, 
-           // but raw collocated count (TF) centered by PCA is a good proxy for LSA.
-           return allCounts[focus][ctxWord] || 0;
+           const count = allCounts[focus][ctxWord] || 0;
+           if (count === 0) return 0;
+           const referenceFreq = totals[ctxWord] || 1;
+           // Log PMI: log(count / refFreq)
+           // We add a small constant to avoid extreme negative numbers, or just use raw ratio
+           return count / referenceFreq; 
         });
         matrix.push(row);
       }

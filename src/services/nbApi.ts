@@ -113,3 +113,22 @@ export async function fetchCollocations(urns: string[], word: string): Promise<R
     return {};
   }
 }
+
+export async function fetchTotals(limit: number = 200000): Promise<Record<string, number>> {
+  const response = await fetch(`https://api.nb.no/dhlab/totals/${limit}`);
+  if (!response.ok) {
+    throw new Error(`Klarte ikke hente totals. Status: ${response.status}`);
+  }
+  
+  const data = await response.json();
+  const totals: Record<string, number> = {};
+  
+  // Format is [["word", count], ["word", count]]
+  if (Array.isArray(data)) {
+    data.forEach(([word, count]) => {
+      totals[word] = count;
+    });
+  }
+  
+  return totals;
+}
