@@ -17,7 +17,7 @@ export const WordEmbeddingComponent: React.FC = () => {
       const foci = focusWords.split(',').map(w => w.trim().toLowerCase()).filter(w => w);
 
       // 1. Fetch a base corpus
-      const corpus = await fetchCorpus({ limit: 500, from_year: 2000, to_year: 2020 });
+      const corpus = await fetchCorpus({ limit: 5000, from_year: 2000, to_year: 2020, lang: 'nob' });
       const urns = corpus.map(b => b.urn);
 
       // 2. Fetch all collocations and aggregate
