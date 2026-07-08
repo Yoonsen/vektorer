@@ -91,8 +91,9 @@ export default function LlmGeneratedComponent({ height = '800px' }: Props) {
       }
     });
 
-    setGlobalMaxX(mX > 0 ? mX : 100);
-    setGlobalMaxY(mY > 0 ? mY : 100);
+    const trueMax = Math.max(mX, mY);
+    setGlobalMaxX(trueMax > 0 ? trueMax : 100);
+    setGlobalMaxY(trueMax > 0 ? trueMax : 100);
   }, [layers]);
 
 
