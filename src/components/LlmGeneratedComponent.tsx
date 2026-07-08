@@ -279,7 +279,7 @@ export default function LlmGeneratedComponent({ height = '800px' }: Props) {
   };
 
   const deleteLayer = (id: string) => {
-    setLayers(prev => prev.filter(l => l.id !== id));
+    setLayers(layers.filter((l) => l.id !== id));
   };
 
   const isAnyLoading = layers.some(l => l.isLoading);
@@ -411,6 +411,12 @@ export default function LlmGeneratedComponent({ height = '800px' }: Props) {
 
       {/* Interactive Graph SVG */}
       <div className="graph-container">
+        {isAnyLoading && (
+          <div className="global-spinner">
+            <div className="spinner"></div>
+            Henter tekster og frekvenser...
+          </div>
+        )}
         <svg viewBox="0 0 100 100" className="graph-svg" preserveAspectRatio="xMidYMid meet">
           {/* Grid and Axes */}
           {[10, 30, 50, 70, 90].map((tick) => (
